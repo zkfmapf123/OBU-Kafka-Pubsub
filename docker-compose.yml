@@ -7,6 +7,10 @@ services:
       dockerfile: Dockerfile
     container_name: publish
     hostname: publish
+    environment:
+      - PORT=6000
+      - SUB_HOST=subscriber
+    restart: always
     networks:
       - pubsub-network
     depends_on:
@@ -18,9 +22,9 @@ services:
     container_name: subscriber
     hostname: subscriber
     ports:
-      - "3000:3000"
+      - "6000:6000"
     environment:
-      - PORT=3000
+      - PORT=6000
     networks:
       - pubsub-network
 

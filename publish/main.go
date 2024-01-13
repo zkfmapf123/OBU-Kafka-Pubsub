@@ -5,6 +5,7 @@ import (
 	"log"
 	"math"
 	"math/rand"
+	"os"
 	"time"
 
 	"github.com/gorilla/websocket"
@@ -16,12 +17,13 @@ type OBUParams struct {
 	Long  float64 `json:"long"`
 }
 
-const (
-	wsEndPoint   = "ws://127.0.0.1:3000/ws"
+var (
+	wsEndPoint   = ""
 	sendInterval = 2
 )
 
 func main() {
+	wsEndPoint = fmt.Sprintf("ws://%s:%s/ws", os.Getenv("SUB_HOST"), os.Getenv("PORT"))
 	obuIds := genOUIDS(20)
 	conn, _, err := websocket.DefaultDialer.Dial(wsEndPoint, nil)
 	if err != nil {
@@ -43,7 +45,7 @@ func main() {
 				log.Fatalln(err)
 			}
 
-			time.Sleep(time.Second * sendInterval)
+			time.Sleep(time.Second * time.Duration(sendInterval))
 		}
 	}
 }
