@@ -1,0 +1,29 @@
+version: '3.8'
+
+services:
+  publish:
+    build: 
+      context: ./publish
+      dockerfile: Dockerfile
+    container_name: publish
+    hostname: publish
+    networks:
+      - pubsub-network
+    depends_on:
+      - subscriber
+  subscriber:
+    build:
+      context: ./subscriber
+      dockerfile: Dockerfile
+    container_name: subscriber
+    hostname: subscriber
+    ports:
+      - "3000:3000"
+    environment:
+      - PORT=3000
+    networks:
+      - pubsub-network
+
+networks:
+  pubsub-network:
+    driver: bridge
