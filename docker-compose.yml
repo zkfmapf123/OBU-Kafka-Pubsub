@@ -9,6 +9,8 @@ services:
     environment:
       - ZOOKEEPER_CLIENT_PORT=2181
       - ZOOKEEPER_TICK_TIME=2000
+    networks:
+      - pubsub-network
   ## Kafka-broker
   broker:
     image: confluentinc/cp-kafka:7.3.2
@@ -20,11 +22,13 @@ services:
       - KAFKA_BROKER_ID=1
       - KAFKA_ZOOKEEPER_CONNECT=zookeeper:2181
       - KAFKA_LISTENER_SECURITY_PROTOCOL_MAP=PLAINTEXT:PLAINTEXT,PLAINTEXT_HOST:PLAINTEXT,PLAINTEXT_INTERNAL:PLAINTEXT
-      - KAFKA_ADVERTISED_LISTENERS=PLAINTEXT://localhost:9092,PLAINTEXT_INTERNAL://broker:29092
+      - KAFKA_ADVERTISED_LISTENERS=PLAINTEXT://broker:9092,PLAINTEXT_INTERNAL://broker:29092
       - KAFKA_INTER_BROKER_LISTENER_NAME=PLAINTEXT_INTERNAL
       - KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR=1
       - KAFKA_TRANSACTION_STATE_LOG_MIN_ISR=1
       - KAFKA_TRANSACTION_STATE_LOG_REPLICATION_FACTOR=1
+    networks:
+      - pubsub-network
     depends_on:
       - zookeeper
   ## Publish Application
@@ -35,14 +39,18 @@ services:
     container_name: publish
     hostname: publish
     environment:
+      - GO111MODULE=on
+      - CGO_ENABLED=0
+      - GOOS=linux 
+      - CGO_ENABLED=1 ## C 라이브러리 사용
       - PORT=6000
       - SUB_HOST=subscriber
+      - KAFKA_HOST=broker
     restart: always
     networks:
       - pubsub-network
     depends_on:
-      - subscriber
-      - broker
+      - broker 
   ## Subscriber Application
   subscriber:
     build:

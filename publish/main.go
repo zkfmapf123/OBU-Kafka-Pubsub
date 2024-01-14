@@ -19,16 +19,14 @@ type OBUParams struct {
 }
 
 var (
-	wsEndPoint   = ""
 	sendInterval = 2
 )
 
 func main() {
-	wsEndPoint = fmt.Sprintf("ws://%s:%s/ws", os.Getenv("SUB_HOST"), os.Getenv("PORT"))
-	obuIds := genOUIDS(20)
+	obuIds := genOUIDS(100)
 
 	// kafka conn setting
-	p, err := kafka.NewProducer(&kafka.ConfigMap{"bootstrap.servers": "localhost"})
+	p, err := kafka.NewProducer(&kafka.ConfigMap{"bootstrap.servers": os.Getenv("KAFKA_HOST")})
 	if err != nil {
 		log.Fatalln(err)
 	}
@@ -50,8 +48,8 @@ func main() {
 		}
 	}()
 
+	topic := "dkTopic"
 	for i := 0; i < len(obuIds); i++ {
-		topic := string(rune(obuIds[i]))
 		lat, long := getLatLong()
 		jsonr, err := json.Marshal(OBUParams{
 			OBUID: obuIds[i],
@@ -67,7 +65,10 @@ func main() {
 			TopicPartition: kafka.TopicPartition{Topic: &topic, Partition: kafka.PartitionAny},
 			Value:          []byte(jsonr),
 		}, nil)
+
+		time.Sleep(time.Second * time.Duration(sendInterval))
 	}
+	p.Flush(15 * 1000)
 }
 
 func genCoord() float64 {

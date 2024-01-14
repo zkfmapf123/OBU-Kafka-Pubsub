@@ -12,22 +12,14 @@ COPY . .
 RUN apk --no-cache update && \
     apk --no-cache add git gcc libc-dev librdkafka-dev vips-dev pkgconf
 
-## CGO_ENABLED : C 라이브러리 사용
-ENV GO111MODULE=on \
-    CGO_ENABLED=0 \
-    GOOS=linux \
-    CGO_ENABLED=1
-# GOARCH=amd64
-
-# RUN go build -o main .
-# RUN go build -tags musl -o main .
 RUN go build -tags dynamic -o main .
 
 ## Runner Stage
-FROM scratch
+FROM alpine:latest
 
 WORKDIR /usr/src/app
 
+RUN apk --no-cache add libc-dev librdkafka-dev pkgconf
 COPY --from=builder /usr/src/app/main .
 
 CMD ["./main"]
