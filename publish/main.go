@@ -1,6 +1,7 @@
 package main
 
 import (
+	"encoding/json"
 	"fmt"
 	"log"
 	"math"
@@ -8,7 +9,7 @@ import (
 	"os"
 	"time"
 
-	"github.com/gorilla/websocket"
+	"github.com/confluentinc/confluent-kafka-go/v2/kafka"
 )
 
 type OBUParams struct {
@@ -25,28 +26,47 @@ var (
 func main() {
 	wsEndPoint = fmt.Sprintf("ws://%s:%s/ws", os.Getenv("SUB_HOST"), os.Getenv("PORT"))
 	obuIds := genOUIDS(20)
-	conn, _, err := websocket.DefaultDialer.Dial(wsEndPoint, nil)
+
+	// kafka conn setting
+	p, err := kafka.NewProducer(&kafka.ConfigMap{"bootstrap.servers": "localhost"})
 	if err != nil {
-		log.Fatal(err)
+		log.Fatalln(err)
 	}
 
-	for {
-		for i := 0; i < len(obuIds); i++ {
-			lat, long := getLatLong()
+	defer p.Close()
 
-			data := OBUParams{
-				OBUID: obuIds[i],
-				Lat:   lat,
-				Long:  long,
+	// check to producer events
+	go func() {
+
+		for e := range p.Events() {
+			switch ev := e.(type) {
+			case *kafka.Message:
+				if ev.TopicPartition.Error != nil {
+					fmt.Printf("Delivery failed : %v\n", ev.TopicPartition)
+				} else {
+					fmt.Printf("Delivered Success : %v\n", ev.TopicPartition)
+				}
 			}
-
-			fmt.Printf("%v\n", data)
-			if err := conn.WriteJSON((data)); err != nil {
-				log.Fatalln(err)
-			}
-
-			time.Sleep(time.Second * time.Duration(sendInterval))
 		}
+	}()
+
+	for i := 0; i < len(obuIds); i++ {
+		topic := string(rune(obuIds[i]))
+		lat, long := getLatLong()
+		jsonr, err := json.Marshal(OBUParams{
+			OBUID: obuIds[i],
+			Lat:   lat,
+			Long:  long,
+		})
+
+		if err != nil {
+			log.Fatalln(err)
+		}
+
+		p.Produce(&kafka.Message{
+			TopicPartition: kafka.TopicPartition{Topic: &topic, Partition: kafka.PartitionAny},
+			Value:          []byte(jsonr),
+		}, nil)
 	}
 }
 

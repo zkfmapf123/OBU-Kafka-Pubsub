@@ -17,8 +17,8 @@ type DataReceiver struct {
 }
 
 func main() {
-	port := fmt.Sprintf(":%s", os.Getenv("PORT"))
 
+	port := fmt.Sprintf(":%s", os.Getenv("PORT"))
 	recv, err := NewDataReceiver()
 	if err != nil {
 		log.Fatalln(err)
