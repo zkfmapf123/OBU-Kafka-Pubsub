@@ -1,4 +1,4 @@
-# OBU-Pubsub
+# OBU-pubsub
 
 ## Execute
 
